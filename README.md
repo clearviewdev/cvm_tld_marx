@@ -1,6 +1,7 @@
 # cvm_tld_marx
 TLD CRM Data supplement with Marx Scraped Data
 
+This Python script automates the process of updating data in the TLD-CRM system based on information obtained from the CMS portal. It uses Selenium for web scraping and interaction with the CMS portal, fetches data from an input CSV file, performs validations, and updates records in TLD-CRM. The script also handles Azure Key Vault authentication, retrieves One-Time Passcodes (OTPs) from M365 emails, and sends email notifications upon completion.
 
 TLD_Tiers_Updated.py:
 	Requires a single argument (1, 2, 3). This will generate a Tiers.CSV file depending upon the chosen input. The generated CSV file will be used as an argument for the MARX script.
