@@ -89,14 +89,14 @@ if response.status_code == 200:
     filtered_records = [record for record in filtered_records if record['policy_id'] == latest_policy_id[record['lead_medicare_claim_number']]]
 
     if selected_tier == 1:
-        # Filter Tier 1: Date_effective > today's date and Date_sold = 5 days before today
+        # Filter Tier 1: Date_effective > today's date and Date_sold = 7 days before today
         csv_filename = "Tier1_Policies.csv"
         current_date = datetime.now()
-        five_days_ago = current_date - timedelta(days=5)
+        seven_days_ago = current_date - timedelta(days=7)
         filtered_records = [record for record in filtered_records if
                             record['date_effective'] is not None and
                             datetime.strptime(record['date_effective'], "%Y-%m-%d").date() > current_date.date() and
-                            datetime.strptime(record['date_sold'], "%Y-%m-%d %H:%M:%S").date() < five_days_ago.date()]
+                            datetime.strptime(record['date_sold'], "%Y-%m-%d %H:%M:%S").date() < seven_days_ago.date()]
                             
     elif selected_tier == 2:
         # Filter Tier 2: Date_effective older than today's date and within the past 90 days
