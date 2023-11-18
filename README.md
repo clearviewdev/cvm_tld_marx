@@ -20,8 +20,8 @@ python3 MARX.py <CSV file name i.e Tier1_Policies.csv>
 #### **[contract_directory.xlsx:](https://docs.google.com/spreadsheets/d/1RueedxgYvXycOgmRffDHv26vmcbpUE5bPt3PNB-a35w/edit 'Google Spreadsheet')**
 Contains relevant data to find and match Contract number and retrieve Carrier Name and Plan Type.
 
-#### Some important steps to take care of:
-**contract_directory.xlsx** file MUST always be in the same directory as the MARX.py script. It is crucial for finding the Carrier Name and Plan Type.
+### **Some important steps to take care of**:
+**contract_directory.xlsx** file must __*always*__ be in the same directory as the MARX.py script. It is crucial for finding the Carrier Name and Plan Type.
 
-DO NOT execute multiple instances of MARX.py at the same time. This could cause confusion with fetching the 2FA code from the email (as multiple mails would be sent out for each instance).
-Recommended time between each run is: 5 minutes.  Look for and replace any ids, keys, and passwords required for your own instance.
+DO NOT execute multiple instances of MARX.py at the same time. This could cause confusion with fetching the 2FA code from the email (as multiple OTPs would be sent out for each instance).
+Recommended time between each run is: 3-5 minutes.  Look for and replace any ids, keys, and passwords required for your own instance.
