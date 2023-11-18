@@ -17,7 +17,7 @@ Command-line usage:<br>
 python3 MARX.py <CSV file name i.e Tier1_Policies.csv>
 ```
 
-#### **contract_directory.xlsx:**
+#### **[contract_directory.xlsx:](https://docs.google.com/spreadsheets/d/1RueedxgYvXycOgmRffDHv26vmcbpUE5bPt3PNB-a35w/edit 'Google Spreadsheet')**
 Contains relevant data to find and match Contract number and retrieve Carrier Name and Plan Type.
 
 #### Some important steps to take care of:
