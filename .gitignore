@@ -2,7 +2,7 @@
 # Security #
 ############
 
-# ENV file containing credentials Azure authentication credentials
+# ENV file containing Azure authentication credentials
 .env
 
 
