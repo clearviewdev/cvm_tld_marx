@@ -459,6 +459,10 @@ if csv_file_path:
                     # Increase the alert counter by 1
                     alerts_count+=1
                 
+                # If old_plan_result is "Resolved" or "Retained", keep it as it is.
+                elif old_plan_result in ['Resolved', 'Retained']:
+                    marx_plan_change_result = old_plan_result
+                    
                 # If none of the above criteria followed, don't trigger the alert.
                 else:
                     marx_plan_change_result = ''
