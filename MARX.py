@@ -349,8 +349,6 @@ def process_csv_part(part_num, part, header):
     #----------------------------------------
     # AT THE "ELIGIBILITY" PAGE AT THIS POINT
     #----------------------------------------
-    
-    
     for row in part:
         with policy_count_lock:
             policies_count += 1
@@ -578,6 +576,7 @@ def process_csv_part(part_num, part, header):
                 with open(error_log_name, 'a') as error_file:
                     error_file.write(error_message + '\n')
     
+    # Close the driver when execution is successful
     driver.quit()
 
 def thread_function(part_num):  
@@ -609,6 +608,8 @@ if __name__ == "__main__":
         send_email = all_threads_successful
     #----------------------------------
     # SEND EMAIL NOTIFICATION TO AGENTS
+    # UPON SUCCESSFUL EXECUTION
     #----------------------------------
-   # if send_email:
-   #     send_notification(error_log_name)
+    
+    if send_email:
+        send_notification(error_log_name)
