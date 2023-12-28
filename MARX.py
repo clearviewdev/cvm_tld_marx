@@ -353,6 +353,7 @@ def process_csv_part(part_num, part, header):
         with policy_count_lock:
             policies_count += 1
         lead_medicare_claim_number = row[header.index("lead_medicare_claim_number")]
+        policy_number = row[header.index("policy_number")]
         # Only proceed if the medicare_number is 11 digits.
         if len(lead_medicare_claim_number) == 11:
             # Find and interact with the input_box
@@ -497,31 +498,26 @@ def process_csv_part(part_num, part, header):
             #---------------------------
             # ALERT STATUS FUNCTIONALITY
             #---------------------------
-            
-            # If last_update is empty, no alert is triggered, value inputted for first time.
-            if not old_last_update:
-                marx_plan_change_result = ''
-                
-            # If alert is already triggered, keep it triggered even if the values match. (Alert raised but not fixed yet)
-            elif old_plan_result == 'Alert':
-                marx_plan_change_result = 'Alert'
-                with alerts_count_lock:
-                    alerts_count+=1
-            
-            # If the values dont' match, trigger an alert and increase the alert counter
-            elif old_pbp and old_contract and (old_pbp != marx_pbp and old_contract != marx_contract):
-                marx_plan_change_result = 'Alert'
-                # Increase the alert counter by 1
-                with alerts_count_lock:
-                    alerts_count+=1
-            
-            # If old_plan_result is "Resolved" or "Retained", keep it as it is.
-            elif old_plan_result in ['Resolved', 'Retained']:
-                marx_plan_change_result = old_plan_result
-                
-            # If none of the above criteria followed, don't trigger the alert.
+            # If Policy Number is blank, Nothing to compare!
+            if policy_number is None or policy_number == '':
+                marx_plan_change_result = None
             else:
-                marx_plan_change_result = ''
+                # If marx_contract exists in policy_number, we have a 'Match'.
+                if marx_contract in policy_number:
+                    marx_plan_change_result = 'match'
+                
+                # If we previously had a 'match' and the updated contract doesn't 'match', trigger an 'Alert'.
+                elif old_plan_result == 'match' and marx_contract not in policy_number:
+                    with alerts_count_lock:
+                        alerts_count+=1
+                    marx_plan_change_result = 'Alert'
+                
+                # If a policy is on Resolved, Retained or Alert, keep as it is!
+                elif old_plan_result in ['Resolved', 'Retained', 'Alert']:
+                    marx_plan_change_result = old_plan_result
+                    
+                else:
+                    marx_plan_change_result = None
                 
             #-----------------------------------------
             #  Load the Excel file to get
@@ -606,10 +602,12 @@ if __name__ == "__main__":
 
         # Set send_email to True if all threads were successful
         send_email = all_threads_successful
+        
     #----------------------------------
     # SEND EMAIL NOTIFICATION TO AGENTS
     # UPON SUCCESSFUL EXECUTION
     #----------------------------------
     
     if send_email:
+        # Send out notification email if all the threads executed successfully.
         send_notification(error_log_name)
