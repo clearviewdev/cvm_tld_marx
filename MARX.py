@@ -25,6 +25,7 @@ from azure.identity import ClientSecretCredential
 from azure.keyvault.secrets import SecretClient
 from dotenv import load_dotenv
 
+
 # Checking if the parameter for the number of parts is present or not.
 if len(sys.argv) != 3:
     print("Usage: python script_name.py <input_csv_file> <thread_count>")
