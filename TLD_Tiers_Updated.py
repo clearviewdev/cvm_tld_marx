@@ -42,7 +42,7 @@ url = "https://cm.tldcrm.com/api/egress/policies"
 
 # Parameters for the query
 params = {
-    "columns"  : "policy_id, lead_id, lead_medicare_claim_number, status_description, status_id, date_effective, date_sold",
+    "columns"  : "policy_id, policy_number, lead_id, lead_medicare_claim_number, date_effective, date_sold",
     "limit"    : "0",
     "status_id": "1"
 }
@@ -89,14 +89,12 @@ if response.status_code == 200:
     filtered_records = [record for record in filtered_records if record['policy_id'] == latest_policy_id[record['lead_medicare_claim_number']]]
 
     if selected_tier == 1:
-        # Filter Tier 1: Date_effective > today's date and Date_sold = 7 days before today
+        # Filter Tier 1: Date_effective > today's date
         csv_filename = "Tier1_Policies.csv"
         current_date = datetime.now()
-        seven_days_ago = current_date - timedelta(days=7)
         filtered_records = [record for record in filtered_records if
                             record['date_effective'] is not None and
-                            datetime.strptime(record['date_effective'], "%Y-%m-%d").date() > current_date.date() and
-                            datetime.strptime(record['date_sold'], "%Y-%m-%d %H:%M:%S").date() < seven_days_ago.date()]
+                            datetime.strptime(record['date_effective'], "%Y-%m-%d").date() > current_date.date()]
                             
     elif selected_tier == 2:
         # Filter Tier 2: Date_effective older than today's date and within the past 90 days
@@ -120,7 +118,7 @@ if response.status_code == 200:
 
     if filtered_records:
         # Write the filtered records to a CSV file
-        with open(csv_filename, 'w', newline='') as csvfile:
+        with open(csv_filename, 'w', encoding='utf-8', newline='') as csvfile:
             fieldnames = filtered_records[0].keys()
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
