@@ -502,6 +502,8 @@ def process_csv_part(part_num, part, header):
             # If Policy Number is blank, Nothing to compare!
             if policy_number is None or policy_number == '':
                 marx_plan_change_result = None
+            
+            # Proceed if Policy Number is NOT blank
             else:
                 # If marx_contract exists in policy_number, we have a 'Match'.
                 if marx_contract in policy_number:
