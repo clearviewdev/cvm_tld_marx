@@ -105,6 +105,8 @@ def get_marx_pbp_and_contract(lead_id):
 
     marx_pbp = ""
     marx_contract = ""
+    marx_last_udpate = ""
+    marx_plan_change_result = ""
 
     while True:
         response = requests.get(url, headers=headers, data=payload)
