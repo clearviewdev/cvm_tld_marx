@@ -94,7 +94,7 @@ if response.status_code == 200:
         current_date = datetime.now()
         filtered_records = [record for record in filtered_records if
                             record['date_effective'] is not None and
-                            datetime.strptime(record['date_effective'], "%Y-%m-%d").date() > current_date.date()]
+                            datetime.strptime(record['date_effective'], "%Y-%m-%d").date() >= current_date.date()]
                             
     elif selected_tier == 2:
         # Filter Tier 2: Date_effective older than today's date and within the past 90 days
