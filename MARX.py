@@ -47,6 +47,7 @@ policies_count = 0
 alerts_count = 0
 max_retries = 2
 csv_file_path = sys.argv[1]
+
 # Extract the file name from the path
 csv_file_name = os.path.basename(csv_file_path)
 num_parts = int(sys.argv[2])
@@ -65,6 +66,7 @@ if not os.path.exists('MARx_Update.csv'):
         header_row = ['marx_last_udpate', 'marx_contract', 'marx_pbp', 'marx_plan_code_desc', 'marx_start_date', 'marx_carrier_name', 'marx_plan_type', 'policy_id', 'lead_id', 'date_effective_in_tld', 'date_sold_in_tld']
         writer= csv.writer(data_file)
         writer.writerow(header_row)
+
                
 #--------------------------------------------------------
 # Loading Azure Keyvault Related Variables from .env file
@@ -92,9 +94,6 @@ def azure_authenticate(client_id, client_secret, tenant_id, vault_url):
     return secret_client
 
 def get_marx_pbp_and_contract(lead_id):
-    # This function takes in lead_id as an argument and returns their marx_pbp and marx_contract information. 
-    # This information will be used later on in the code to make the comparison and change the value of marx_plan_change_result field
-
     url = f"https://cm.tldcrm.com/api/egress/leads?columns=marx_contract,marx_pbp,marx_plan_change_result,marx_last_udpate&import=lead_custom_field&lead_id={lead_id}"
     payload = {}
     headers = {
@@ -112,17 +111,23 @@ def get_marx_pbp_and_contract(lead_id):
         response = requests.get(url, headers=headers, data=payload)
         if response.status_code == 200:
             data = json.loads(response.text)
-            if data['response']['results'] == False:
+            if 'response' in data and data['response']['results'] == False:
                 break
-            # Extract the values of relevant data from the API response
-            marx_pbp = str(data['response']['results']['marx_pbp'] or "")  # Assign empty string if null
-            marx_contract = str(data['response']['results']['marx_contract'] or "")  # Assign empty string if null
-            marx_last_udpate = str(data['response']['results']['marx_last_udpate'] or "")
-            marx_plan_change_result = str(data['response']['results']['marx_plan_change_result'] or "")
+
+            # Check if 'response' key exists before accessing its subkeys
+            if 'response' in data and 'results' in data['response']:
+                results = data['response']['results']
+                
+                # Assign empty strings to variables if 'key' is not present or NULL
+                marx_pbp = str(results.get('marx_pbp', ""))  
+                marx_contract = str(results.get('marx_contract', ""))
+                marx_last_udpate = str(results.get('marx_last_udpate', ""))
+                marx_plan_change_result = str(results.get('marx_plan_change_result', ""))
             
             break  # Exit the loop when the response code is 200
         else:
-            print("Response code is not 200. Retrying...")
+            # Sleep for half second and retry the request
+            time.sleep(0.5)
 
     return marx_pbp, marx_contract, marx_last_udpate, marx_plan_change_result
 
@@ -158,7 +163,8 @@ def update_marx_data_in_tld(marx_data):
         if response.status_code == 200:
             break
         else:
-            print("Retrying PUT request")
+            # Sleep for half second and retry the request
+            time.sleep(0.5)
 
 def get_OTP(mailbox_secret):
     # This function returns the OTP or 2FA code from the mailbox of the relevant email.
@@ -215,11 +221,12 @@ def send_notification(attachment_name):
         # Check if the attachment file exists before adding it
         if os.path.exists(attachment_name):
             m.attachments.add(attachment_name)
-
+        
+        # Send notification
         m.send()                
 
 def split_csv_file(csv_file_path, num_parts):
-    # This function reads the CSV file and split it into the specified number of parts
+    # This function reads the inputted CSV file and split it into the specified number of parts
     with open(csv_file_path, 'r') as csv_file:
         reader = csv.reader(csv_file)
         header = next(reader)  # First row is the header
