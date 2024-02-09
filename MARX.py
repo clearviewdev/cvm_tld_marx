@@ -45,7 +45,7 @@ error_log_name = f"error_log_{datetime.now().strftime('%m_%d_%Y')}.txt"
 send_email = False
 policies_count = 0
 alerts_count = 0
-max_retries = 2
+max_retries = 3
 csv_file_path = sys.argv[1]
 
 # Extract the file name from the path
@@ -356,51 +356,66 @@ def process_csv_part(part_num, part, header):
 
     print("Starting to input Medicare Numbers into MARx.")
 
+    # Multiple potential errors  in source's HTML
+    mbi_error = "<h2>Attention: The beneficiary ID is not a valid MBI number</h2>"
+    not_found_error = "<h2>Attention: Beneficiary not found</h2>"
+    
     #----------------------------------------
     # AT THE "ELIGIBILITY" PAGE AT THIS POINT
     #----------------------------------------
+
+ 
     for row in part:
         with policy_count_lock:
             policies_count += 1
         lead_medicare_claim_number = row[header.index("lead_medicare_claim_number")]
         policy_number = row[header.index("policy_number")]
+         
         # Only proceed if the medicare_number is 11 digits.
         if len(lead_medicare_claim_number) == 11:
-            # Find and interact with the input_box
-            print(f"Working on Medicare Number: {lead_medicare_claim_number} | Thread# {part_num}")
-            input_box = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "claimNumber")))
-            input_box.clear()
-            input_box.send_keys(lead_medicare_claim_number)
-            time.sleep(1)
-            input_box.send_keys(Keys.RETURN)
-            time.sleep(24)
-            
-            # Checking if the entered MBI Number is valid or not
-            mbi_error = "<h2>Attention: The beneficiary ID is not a valid MBI number</h2>"
-            not_found_error = "<h2>Attention: Beneficiary not found</h2>"
-            if mbi_error in driver.page_source:
-                error_message = f"Error: Invalid Medicare Number: {lead_medicare_claim_number} for Policy ID:{row[header.index('policy_id')]}"
-                with error_file_lock:
-                    with open(error_log_name, 'a') as error_file:
-                        error_file.write(error_message + '\n')
-                continue
-            elif not_found_error in driver.page_source:
-                error_message = f"Error: Beneficiary not found for Medicare Number: {lead_medicare_claim_number} for Policy ID:{row[header.index('policy_id')]}"
-                with error_file_lock:
-                    with open(error_log_name, 'a') as error_file:
-                        error_file.write(error_message + '\n')
-                continue
+        
+            # Show input progress
+            print(f"Working on Medicare Number: {lead_medicare_claim_number} | Thread# {part_num}")                                 
                 
             # Wait for 60 seconds for the table to load. If it doesn't, refresh and retry until 'max_retries' are exhausted.
             retries = 0
             while retries < max_retries:
                 try:
+                    # Find and interact with the input_box
+                    input_box = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "claimNumber")))
+                    # Clear the input box
+                    input_box.clear()
+                    time.sleep(1)
+                    # Input next medicare number
+                    input_box.send_keys(lead_medicare_claim_number)
+                    time.sleep(1)
+                    # Send "Enter/Return" key as input
+                    input_box.send_keys(Keys.RETURN)
+                    time.sleep(23)
+                    
+                    # Checking if the entered MBI Number is valid or not          
+                    if mbi_error in driver.page_source:
+                        error_message = f"Error: Invalid Medicare Number: {lead_medicare_claim_number} for Policy ID:{row[header.index('policy_id')]}"
+                        with error_file_lock:
+                            with open(error_log_name, 'a') as error_file:
+                                error_file.write(error_message + '\n')
+                        break
+                    elif not_found_error in driver.page_source:
+                        error_message = f"Error: Beneficiary not found for Medicare Number: {lead_medicare_claim_number} for Policy ID:{row[header.index('policy_id')]}"
+                        with error_file_lock:
+                            with open(error_log_name, 'a') as error_file:
+                                error_file.write(error_message + '\n')
+                        break
+                        
+                    # Wait for the results table to load
                     table = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.CSS_SELECTOR, "table.eligTable7")))
                     break
                 except TimeoutException:
                     print("Timeout exception occurred")
-                    # Functionality if the table doesn't appear within the designed time frame
+                    # Functionality if a Timeout occurs
                     retries += 1
+                    
+                    # Refresh the page in case a timeout exception occurs and retry
                     driver.get('https://portal.cms.gov/myportal/wps/myportal/cmsportal/marxaws/verticalRedirect/application')
                     time.sleep(10)
 
@@ -421,29 +436,7 @@ def process_csv_part(part_num, part, header):
                     # Wait for the Eligibility button to be clickable and click it
                     eligibility_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, "//a[@class='navsm' and text()='Eligibility']")))
                     eligibility_button.click()
-                    time.sleep(10)
-                    
-                    input_box = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, "claimNumber")))
-                    input_box.clear()
-                    input_box.send_keys(lead_medicare_claim_number)
-                    input_box.send_keys(Keys.RETURN)
-                    time.sleep(25)
-                    
-                    # Checking if the entered MBI Number is valid or not
-                    mbi_error = "<h2>Attention: The beneficiary ID is not a valid MBI number</h2>"
-                    not_found_error = "<h2>Attention: Beneficiary not found</h2>"
-                    if mbi_error in driver.page_source:
-                        error_message = f"Error: Invalid Medicare Number: {lead_medicare_claim_number} for Policy ID:{row[header.index('policy_id')]}"
-                        with error_file_lock:
-                            with open(error_log_name, 'a') as error_file:
-                                error_file.write(error_message + '\n')
-                        break
-                    elif not_found_error in driver.page_source:
-                        error_message = f"Error: Beneficiary not found for Medicare Number: {lead_medicare_claim_number} for Policy ID:{row[header.index('policy_id')]}"
-                        with error_file_lock:
-                            with open(error_log_name, 'a') as error_file:
-                                error_file.write(error_message + '\n')
-                        break
+                    time.sleep(10) 
                     
             if (retries == max_retries) or (mbi_error in driver.page_source) or (not_found_error in driver.page_source):
                 continue
