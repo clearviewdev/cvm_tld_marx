@@ -83,7 +83,7 @@ vault_url = os.environ['AZURE_VAULT_URL']
 # FUNCTION DECLARATIONS
 #----------------------
 def azure_authenticate(client_id, client_secret, tenant_id, vault_url):
-    # This function takes the variables fetched from the .env file as an argument
+    # This method takes the variables fetched from the .env file as an argument
     # and returns a 'secret_client' which can then be used to fetch the secrets from Azure Vault
     
     credentials = ClientSecretCredential(client_id = client_id, client_secret = client_secret, tenant_id = tenant_id)
@@ -132,7 +132,7 @@ def get_marx_pbp_and_contract(lead_id):
     return marx_pbp, marx_contract, marx_last_udpate, marx_plan_change_result
 
 def update_marx_data_in_tld(marx_data):
-    # This function takes a data-dictionary as an argument and updates the data in TLD-CRM.
+    # This method takes a data-dictionary as an argument and updates the data in TLD-CRM.
     
     lead_id = marx_data["lead_id"]
     marx_last_udpate = marx_data["marx_last_udpate"]
@@ -166,8 +166,36 @@ def update_marx_data_in_tld(marx_data):
             # Sleep for half second and retry the request
             time.sleep(0.5)
 
+def update_blank_data_in_tld(marx_data):
+    # This method takes a data-dictionary as an argument and updates the marx_last_update in TLD-CRM.
+    
+    lead_id = marx_data["lead_id"]
+    marx_last_udpate = marx_data["marx_last_udpate"]
+    
+    # Endpoint URL
+    url = "https://cm.tldcrm.com/api/ingress/leads"
+    
+    # Necessary Headers
+    headers = {
+      'tld-api-id': secret_client.get_secret('tld-api-id').value,
+      'tld-api-key': secret_client.get_secret('tld-api-key').value,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Cookie': secret_client.get_secret('cookie-value').value
+    }
+    # Creating a payload
+    payload = f'lead_id={lead_id}&marx_last_udpate={marx_last_udpate}'
+
+    while True:
+        # Making the PUT request
+        response = requests.put(url, headers=headers, data=payload)
+        if response.status_code == 200:
+            break
+        else:
+            # Sleep for half second and retry the request
+            time.sleep(0.5)
+
 def get_OTP(mailbox_secret):
-    # This function returns the OTP or 2FA code from the mailbox of the relevant email.
+    # This method returns the OTP or 2FA code from the mailbox of the relevant email.
    
     client_id = secret_client.get_secret('client-id').value
     client_secret = secret_client.get_secret('client-secret').value
@@ -202,7 +230,7 @@ def get_OTP(mailbox_secret):
            raise SystemExit("Email does not contain a Valid Payload. Please run the script again")
                 
 def send_notification(attachment_name):
-    # This function sends out a notification email to a pre-defined distribution list about the progress
+    # This method sends out a notification email to a pre-defined distribution list about the progress
     
     client_id = secret_client.get_secret('client-id').value
     client_secret = secret_client.get_secret('client-secret').value
@@ -226,7 +254,7 @@ def send_notification(attachment_name):
         m.send()                
 
 def split_csv_file(csv_file_path, num_parts):
-    # This function reads the inputted CSV file and split it into the specified number of parts
+    # This method reads the inputted CSV file and split it into the specified number of parts
     with open(csv_file_path, 'r') as csv_file:
         reader = csv.reader(csv_file)
         header = next(reader)  # First row is the header
@@ -463,28 +491,24 @@ def process_csv_part(part_num, part, header):
             american_date_format = today.strftime("%m/%d/%Y")
             
             # Checking if customer is enrolled in any plan
-            if "The beneficiary is not currently enrolled in any plan" in first_row_data[0]:
-                # If customers is not enrolled in any plan, upload blank data to the TLD with today's 'marx_last_udpate' field.
-                blank_data = {
-                "lead_id" : row[header.index('lead_id')],
-                "marx_last_udpate" : american_date_format,
-                "marx_contract" : '',
-                "marx_pbp" : '',
-                "marx_plan_code_desc" : '',
-                "marx_start_date" : '',
-                "marx_carrier_name" : '',
-                "marx_plan_type" : '',
-                "marx_plan_change_result" : ''
-                }
-                update_marx_data_in_tld(blank_data)
+            # If any anomalies are encountered, skip to next Medicare number
+            try:
+                if "The beneficiary is not currently enrolled in any plan" in first_row_data[0].strip():
+                    # If customers is not enrolled in any plan, upload blank data to the TLD with today's 'marx_last_udpate' field.
+                    blank_data = {
+                        "lead_id" : row[header.index('lead_id')],
+                        "marx_last_udpate" : american_date_format
+                    }
+                    update_blank_data_in_tld(blank_data)
+                    continue
+            except:
                 continue
-                    
             # Getting marx data:
             marx_last_udpate = american_date_format
-            marx_contract = str(first_row_data[0])
-            marx_pbp = str(first_row_data[1])
-            marx_plan_code_desc = str(first_row_data[2])
-            marx_start_date = str(first_row_data[3])
+            marx_contract = str(first_row_data[0].strip())
+            marx_pbp = str(first_row_data[1].strip())
+            marx_plan_code_desc = str(first_row_data[2].strip())
+            marx_start_date = str(first_row_data[3].strip())
             marx_carrier_name = ''
             marx_plan_type = ''
             policy_id = row[header.index('policy_id')]
@@ -493,7 +517,7 @@ def process_csv_part(part_num, part, header):
             date_sold_in_tld = row[header.index('date_sold')]
             
             # Calling API to get the current values of marx_pbp, marx_contract and comparing them with new ones
-            marx_plan_change_result = ''
+            marx_plan_change_result = None
             
             # Retrieving old data from API before update
             old_pbp, old_contract, old_last_update, old_plan_result = get_marx_pbp_and_contract(lead_id)
