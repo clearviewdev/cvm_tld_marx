@@ -505,10 +505,16 @@ def process_csv_part(part_num, part, header):
                 continue
             # Getting marx data:
             marx_last_udpate = american_date_format
-            marx_contract = str(first_row_data[0].strip())
-            marx_pbp = str(first_row_data[1].strip())
-            marx_plan_code_desc = str(first_row_data[2].strip())
-            marx_start_date = str(first_row_data[3].strip())
+            marx_contract = str(first_row_data[0]).strip()
+            
+            # Typecast PBP to int (originally float)
+            try:
+                marx_pbp = str(int(first_row_data[1])).strip()
+            except:
+                marx_pbp = str(first_row_data[1]).strip()
+                
+            marx_plan_code_desc = str(first_row_data[2]).strip()
+            marx_start_date = str(first_row_data[3]).strip()
             marx_carrier_name = ''
             marx_plan_type = ''
             policy_id = row[header.index('policy_id')]
