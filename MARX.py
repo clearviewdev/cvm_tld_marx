@@ -10,8 +10,7 @@ from selenium.webdriver.common.keys import Keys
 import time
 import pandas as pd
 from io import StringIO
-from datetime import date
-from datetime import datetime
+from datetime import datetime, date
 import openpyxl
 import csv
 import json
@@ -396,9 +395,16 @@ def process_csv_part(part_num, part, header):
     for row in part:
         with policy_count_lock:
             policies_count += 1
+            
+        # Get data from Policies CSV
         lead_medicare_claim_number = row[header.index("lead_medicare_claim_number")]
         policy_number = row[header.index("policy_number")]
-         
+        date_sold = row[header.index("date_sold")]
+        
+        # Convert date_sold to a datetime object
+        date_sold_datetime = datetime.strptime(date_sold, "%Y-%m-%d %H:%M:%S").date()
+
+        
         # Only proceed if the medicare_number is 11 digits.
         if len(lead_medicare_claim_number) == 11:
         
@@ -489,6 +495,7 @@ def process_csv_part(part_num, part, header):
             today = date.today()
             # Format the date in MM/DD/YYYY format
             american_date_format = today.strftime("%m/%d/%Y")
+            american_date = datetime.strptime(american_date_format, "%m/%d/%Y").date()
             
             # Checking if customer is enrolled in any plan
             # If any anomalies are encountered, skip to next Medicare number
@@ -527,7 +534,9 @@ def process_csv_part(part_num, part, header):
             
             # Retrieving old data from API before update
             old_pbp, old_contract, old_last_update, old_plan_result = get_marx_pbp_and_contract(lead_id)
-
+            
+            # Calculate the date delta
+            date_delta = american_date - date_sold_datetime
             #---------------------------
             # ALERT STATUS FUNCTIONALITY
             #---------------------------
@@ -550,7 +559,14 @@ def process_csv_part(part_num, part, header):
                 # If a policy is on Resolved, Retained or Alert, keep as it is!
                 elif old_plan_result in ['Resolved', 'Retained', 'Alert']:
                     marx_plan_change_result = old_plan_result
-                    
+                
+                # If it's been 3 or more days since the sale date and the policies still don't match, trigger an 'Alert'
+                elif old_plan_result is None and marx_plan_change_result is None and old_last_update is not None and date_delta.days >= 3:
+                    with alerts_count_lock:
+                        alerts_count+=1
+                    marx_plan_change_result = 'Alert'
+                
+                # No conditionals match, revert policy to None
                 else:
                     marx_plan_change_result = None
                 
