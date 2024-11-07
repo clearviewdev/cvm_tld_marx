@@ -55,22 +55,22 @@ class TokenBucket:
             return True
 
 # Method to send a PUT request
-def send_put_request(lead_id):
+def send_put_request(lead_id, medicare_claim_number):
 
     # Creating a payload
-    payload = f"lead_id={lead_id}&marx_plan_change_result={None}"
+    payload = f"lead_id={lead_id}&medicare_claim_number={medicare_claim_number}&marx_plan_change_result={None}"
     
-    #Making the PUT request
+    # Making the PUT request
     try:
         response = requests.put(INGRESS_URL, headers=headers, data=payload, timeout=10)
         time.sleep(1)
         # Reporting
         if response.status_code == 200:
-            logging.info(f"PUT request for lead_id {lead_id} was successful (Status Code 200)")
+            logging.info(f"PUT request for lead_id {lead_id} with medicare claim number {medicare_claim_number} was successful (Status Code 200)")
         else:
-            logging.error(f"PUT request for lead_id {lead_id} failed with status code: {response.status_code}")
+            logging.error(f"PUT request for lead_id {lead_id} with medicare claim number {medicare_claim_number} failed with status code: {response.status_code}")
     except requests.RequestException as e:
-        logging.error(f"PUT request for lead_id {lead_id} failed due to error: {str(e)}")
+        logging.error(f"PUT request for lead_id {lead_id} with medicare claim number {medicare_claim_number} failed due to error: {str(e)}")
 
 
 # Method to send requests using a specific worker ID
@@ -90,7 +90,14 @@ def send_requests(worker_id, request_queue):
                 time.sleep(1)  # Sleep for a short time and try again
                 continue
 
-            send_put_request(lead)
+            # Unpack lead details
+            lead_id = lead['lead_id']
+            
+            # Strip the medicare claim number of dashes
+            lead_medicare_claim_number = lead['lead_medicare_claim_number'].replace('-', '')
+
+            # Pass both lead_id and lead_medicare_claim_number to send_put_request
+            send_put_request(lead_id, lead_medicare_claim_number)
         except Exception as e:
             # Log the error
             logging.error(f"Worker {worker_id}: Error - {str(e)}")
@@ -118,7 +125,6 @@ yesterday_american_format = yesterday.strftime("%m/%d/%Y")
 params = {
     "columns"  : "policy_id, lead_id, lead_medicare_claim_number, date_sold",
     "limit"    : "0",
-    "status_id": "1",
     "date_sold" : yesterday_american_format
 }
 
@@ -140,7 +146,7 @@ while True:
 
         if records:
             for record in records:
-                leads.append(record['lead_id'])
+                leads.append({"lead_id": record['lead_id'], "lead_medicare_claim_number": record['lead_medicare_claim_number']})
             print(f"Filtered records found!")
         else:
             print("No filtered records to write.")
