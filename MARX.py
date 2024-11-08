@@ -561,7 +561,7 @@ def process_csv_part(part_num, part, header):
                     marx_plan_change_result = old_plan_result
                 
                 # If it's been 3 or more days since the sale date and the policies still don't match, trigger an 'Alert'
-                elif old_plan_result is None and marx_plan_change_result is None and old_last_update is not None and date_delta.days >= 3:
+                elif old_plan_result is None and marx_plan_change_result is None and old_last_update is not None and date_delta.days >= 14:
                     with alerts_count_lock:
                         alerts_count+=1
                     marx_plan_change_result = 'Alert'
