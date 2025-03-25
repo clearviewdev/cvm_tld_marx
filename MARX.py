@@ -125,8 +125,8 @@ def get_marx_pbp_and_contract(lead_id):
             
             break  # Exit the loop when the response code is 200
         else:
-            # Sleep for half second and retry the request
-            time.sleep(0.5)
+            # Sleep for a second and retry the request
+            time.sleep(1)
 
     return marx_pbp, marx_contract, marx_last_udpate, marx_plan_change_result
 
@@ -162,8 +162,8 @@ def update_marx_data_in_tld(marx_data):
         if response.status_code == 200:
             break
         else:
-            # Sleep for half second and retry the request
-            time.sleep(0.5)
+            # Sleep for a second and retry the request
+            time.sleep(1)
 
 def update_blank_data_in_tld(marx_data):
     # This method takes a data-dictionary as an argument and updates the marx_last_update in TLD-CRM.
@@ -190,8 +190,8 @@ def update_blank_data_in_tld(marx_data):
         if response.status_code == 200:
             break
         else:
-            # Sleep for half second and retry the request
-            time.sleep(0.5)
+            # Sleep for a second and retry the request
+            time.sleep(1)
 
 def get_OTP(mailbox_secret):
     # This method returns the OTP or 2FA code from the mailbox of the relevant email.
@@ -372,12 +372,12 @@ def process_csv_part(part_num, part, header):
     time.sleep(5)
 
     # Wait for the Beneficiaries button to be clickable and click it
-    beneficiaries_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//a[@class='navsm' and text()='Beneficiaries ']")))
+    beneficiaries_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//a[text()='Beneficiaries ']")))
     beneficiaries_button.click()
     time.sleep(3)
 
     # Wait for the Eligibility button to be clickable and click it
-    eligibility_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//a[@class='navsm' and text()='Eligibility']")))
+    eligibility_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//a[text()='Eligibility ']")))
     eligibility_button.click()
     time.sleep(3)
 
@@ -402,8 +402,10 @@ def process_csv_part(part_num, part, header):
         date_sold = row[header.index("date_sold")]
         
         # Convert date_sold to a datetime object
-        date_sold_datetime = datetime.strptime(date_sold, "%Y-%m-%d %H:%M:%S").date()
-
+        try:
+            date_sold_datetime = datetime.strptime(date_sold, "%Y-%m-%d %H:%M:%S").date()
+        except ValueError:
+            continue
         
         # Only proceed if the medicare_number is 11 digits.
         if len(lead_medicare_claim_number) == 11:
@@ -425,7 +427,7 @@ def process_csv_part(part_num, part, header):
                     time.sleep(1)
                     # Send "Enter/Return" key as input
                     input_box.send_keys(Keys.RETURN)
-                    time.sleep(23)
+                    time.sleep(5)
                     
                     # Checking if the entered MBI Number is valid or not          
                     if mbi_error in driver.page_source:
@@ -460,17 +462,17 @@ def process_csv_part(part_num, part, header):
                     # Wait for the Logon button to be clickable and click it
                     logon_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.ID, "userRole")))
                     logon_button.click()
-                    time.sleep(10)
+                    time.sleep(6)
 
                     # Wait for the Beneficiaries button to be clickable and click it
-                    beneficiaries_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, "//a[@class='navsm' and text()='Beneficiaries ']")))
+                    beneficiaries_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, "//a[text()='Beneficiaries ']")))
                     beneficiaries_button.click()
-                    time.sleep(10)
+                    time.sleep(6)
 
                     # Wait for the Eligibility button to be clickable and click it
-                    eligibility_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, "//a[@class='navsm' and text()='Eligibility']")))
+                    eligibility_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, "//a[text()='Eligibility ']")))
                     eligibility_button.click()
-                    time.sleep(10) 
+                    time.sleep(6) 
                     
             if (retries == max_retries) or (mbi_error in driver.page_source) or (not_found_error in driver.page_source):
                 continue
