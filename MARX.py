@@ -446,9 +446,9 @@ def process_csv_part(part_num, part, header):
                     # Wait for the results table to load
                     table = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.CSS_SELECTOR, "table.eligTable7")))
                     break
-                except TimeoutException:
-                    print("Timeout exception occurred")
-                    # Functionality if a Timeout occurs
+                except:
+                    print("Exception occurred")
+                    # Functionality if an exception occurs
                     retries += 1
                     
                     # Refresh the page in case a timeout exception occurs and retry
